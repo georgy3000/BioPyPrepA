@@ -1,4 +1,4 @@
-mport numpy as np
+import numpy as np
 import pycuda.driver as cuda
 from .cuda_kernels import normalize_kernel, filter_low_quality, align_sequences
 from . import utils

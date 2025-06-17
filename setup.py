@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="BioPyPrepA",  # Имя библиотеки
-    version="0.1.0",     # Первая версия
+    version="0.1.1",     # Первая версия
     description="GPU-ускоренная библиотека для препроцессинга биологических последовательностей",
     author="Georgy3000",  # Твоё имя или ник
     url="https://github.com/georgy3000/BioPyPrepA",

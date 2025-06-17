@@ -1,6 +1,0 @@
-from my_package.cuda_kernels import normalize_kernel, filter_low_quality
-
-def gpu_normalize_array(data: np.ndarray) -> np.ndarray:
-    ...
-    normalize_kernel(gpu_data, np.int32(n), block=..., grid=...)
-    ...

@@ -97,10 +97,12 @@ __global__ void filter_by_length_cuda(
     int* lengths,      // длины ридов
     int* keep_flags,   // флаги: 1 — оставить, 0 — отфильтровать
     int min_length,
+    int max_length,
     int n
 ) {
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
     if (idx >= n) return;
 
-    keep_flags[idx] = (lengths[idx] >= min_length) ? 1 : 0;
+    keep_flags[idx] = ((lengths[idx] >= min_length)&&(lengths[idx] <= max_length)) ? 1 : 0;
 }
+

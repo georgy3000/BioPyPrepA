@@ -16,7 +16,8 @@ def count_reads(fastq_path: str) -> int:
         data = f.read()
 
     byte_data = np.frombuffer(data, dtype=np.uint8)
-    size = np.int32(len(byte_data))
+    n = len(byte_data)
+    size = np.int32(n)
 
     # GPU память
     data_gpu = cuda.mem_alloc(byte_data.nbytes)
@@ -26,12 +27,9 @@ def count_reads(fastq_path: str) -> int:
     cuda.memcpy_htod(count_gpu, np.zeros(1, dtype=np.int32))
 
     # параметры запуска
-    block_size = 256
-    grid_size = min((size + block_size - 1) // block_size, 1024)
+    grid = compute_grid(n, BLOCK_SIZE)
 
-    count_lines_cuda(
-        data_gpu, size, count_gpu, block=(block_size, 1, 1), grid=(grid_size, 1)
-    )
+    count_lines_cuda(data_gpu, size, count_gpu, block=BLOCK_SIZE, grid=grid)
 
     result = np.zeros(1, dtype=np.int32)
     cuda.memcpy_dtoh(result, count_gpu)
@@ -54,7 +52,6 @@ def filter_quality(
     cuda.memcpy_htod(seqs_gpu, seqs)
     cuda.memcpy_htod(qual_gpu, qual)
 
-    block = (256, 1, 1)
     grid = compute_grid(n, BLOCK_SIZE)
 
     filter_low_quality_cuda(
@@ -99,8 +96,7 @@ def trim_primers(fastq_path: str, primer: str) -> list[str]:
     cuda.memcpy_htod(lengths_gpu, seq_lengths)
     cuda.memcpy_htod(primer_gpu, primer_bytes)
 
-    block = (256, 1, 1)
-    grid = ((n_reads + 255) // 256, 1)
+    grid = compute_grid(n_reads, BLOCK_SIZE)
 
     trim_primers_cuda(
         seqs_gpu,
@@ -155,8 +151,7 @@ def trim_adapters(fastq_path: str, adapter: str):
     cuda.memcpy_htod(lengths_gpu, seq_lengths)
     cuda.memcpy_htod(adapter_gpu, adapter_bytes)
 
-    block = (256, 1, 1)
-    grid = ((n_reads + 255) // 256, 1)
+    grid = compute_grid(n_reads, BLOCK_SIZE)
 
     trim_adapters_cuda(
         seqs_gpu,
@@ -164,7 +159,7 @@ def trim_adapters(fastq_path: str, adapter: str):
         lengths_gpu,
         adapter_gpu,
         np.int32(len(adapter)),
-        block=block,
+        block=BLOCK_SIZE,
         grid=grid,
     )
 
@@ -186,7 +181,7 @@ def trim_adapters(fastq_path: str, adapter: str):
 
 
 def filter_reads_by_length(
-    fastq_path: str, min_length: int
+    fastq_path: str, min_length: int, max_length: int
 ) -> list[tuple[str, str, str]]:
     with open(fastq_path, "r") as f:
         lines = f.readlines()
@@ -207,15 +202,15 @@ def filter_reads_by_length(
     cuda.memcpy_htod(lengths_gpu, seq_lengths)
     cuda.memcpy_htod(flags_gpu, keep_flags)
 
-    block = (256, 1, 1)
-    grid = ((n_reads + 255) // 256, 1)
+    grid = compute_grid(n_reads, BLOCK_SIZE)
 
     filter_by_length_cuda(
         lengths_gpu,
         flags_gpu,
         np.int32(min_length),
+        np.int32(max_length),
         np.int32(n_reads),
-        block=block,
+        block=BLOCK_SIZE,
         grid=grid,
     )
 
